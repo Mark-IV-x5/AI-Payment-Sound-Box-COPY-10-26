@@ -12,7 +12,7 @@ void TextToSpeech(String p_request) {
   String voice  = "onyx";
   String vspeed = "1.0";
 
-  audio_play.openai_speech(cfg_openai_key, model, p_request, "", voice, "aac", vspeed);
+  audio_play.openai_speech(cfg_openai_key, model, p_request, "", voice, "mp3", vspeed);
 }
 
 // Audio.h callback (optional)
