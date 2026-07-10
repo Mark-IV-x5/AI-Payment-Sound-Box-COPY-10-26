@@ -63,70 +63,23 @@ String OpenAI_RazorpayAssistant(String UserRequest, String currentDate) {
 }
 
 String extractJSON(String response) {
-  if (DEBUG) {
-    Serial.println("\n--- RAW RESPONSE (first 500 chars) ---");
-    Serial.println(response.substring(0, min(500, (int)response.length())));
-    Serial.println("--- END RAW RESPONSE ---\n");
+  DynamicJsonDocument env(4096);
+  DeserializationError err = deserializeJson(env, response);
+  if (err) {
+    DebugPrintln("Envelope parse error: " + String(err.c_str()));
+    return "{\"error\":\"Invalid envelope\"}";
   }
 
-  int contentStart = response.indexOf("\"content\":");
-  if (contentStart < 0) {
-    contentStart = response.indexOf("\"content\": \"");
-    if (contentStart < 0) {
-      DebugPrintln("No content field found in response");
-      return "{\"error\":\"No content in response\"}";
-    }
+  const char* content = env["choices"][0]["message"]["content"];
+  if (!content) {
+    DebugPrintln("No content field in response");
+    return "{\"error\":\"No content in response\"}";
   }
 
-  DebugPrintln("Found content field at position: " + String(contentStart));
-  contentStart = response.indexOf("\"", contentStart + 10) + 1;
-
-  if (contentStart <= 0 || contentStart >= (int)response.length()) {
-    DebugPrintln("Could not find content start quote");
-    return "{\"error\":\"Malformed response - no opening quote\"}";
-  }
-
-  int  contentEnd = contentStart;
-  bool found      = false;
-  int  iterations = 0;
-
-  while (!found && contentEnd < (int)response.length() && iterations < 1000) {
-    iterations++;
-    contentEnd = response.indexOf("\"", contentEnd);
-    if (contentEnd > 0) {
-      if (response.charAt(contentEnd - 1) == '\\') {
-        contentEnd++;
-      } else {
-        found = true;
-      }
-    } else {
-      DebugPrintln("Reached end of string without finding closing quote");
-      break;
-    }
-  }
-
-  if (!found || contentEnd <= contentStart) {
-    DebugPrintln("Could not find content end quote");
-    return "{\"error\":\"Malformed response - no closing quote\"}";
-  }
-
-  String content = response.substring(contentStart, contentEnd);
-  content.replace("\\n",  " ");
-  content.replace("\\r",  " ");
-  content.replace("\\\"", "\"");
-  content.replace("\\/",  "/");
-  content.replace("\\\\", "\\");
-  content.trim();
-
-  int braceStart = content.indexOf("{");
-  int braceEnd   = content.lastIndexOf("}");
-
-  if (braceStart >= 0 && braceEnd > braceStart) {
-    String jsonOnly = content.substring(braceStart, braceEnd + 1);
-    DebugPrintln("Final JSON: " + jsonOnly);
-    return jsonOnly;
-  }
-
-  DebugPrintln("No valid JSON braces found in content");
-  return "{\"error\":\"Invalid JSON format in response\"}";
+  String c = String(content);
+  c.trim();
+  int b = c.indexOf('{');
+  int e = c.lastIndexOf('}');
+  if (b >= 0 && e > b) return c.substring(b, e + 1);
+  return c;
 }
