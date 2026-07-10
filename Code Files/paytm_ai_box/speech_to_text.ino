@@ -38,7 +38,7 @@ String SpeechToText_ElevenLabs(String audio_filename, uint8_t* PSRAM, long PSRAM
 
   size_t total_size = body_start.length() + PSRAM_length + body_end.length();
 
-  uint8_t* complete_body = (uint8_t*)malloc(total_size);
+  uint8_t* complete_body = (uint8_t*)ps_malloc(total_size);
   if (!complete_body) {
     Serial.println("\n* ERROR - Failed to allocate memory for HTTP body!");
     http.end();
